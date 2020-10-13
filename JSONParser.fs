@@ -1,7 +1,8 @@
 module JSONParser
 
-open Tokenizer
 open Parser
+open Tokenizer
+open JSONTokenizer
 
 type JSONKey = JSONKey of string
 type JSON = String of string | Number of float | Null | Boolean of bool | Array of JSON list | Object of Map<JSONKey,JSON>
