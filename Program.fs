@@ -1,6 +1,6 @@
 ﻿open System
 open JSONParser
-open CParser
+open CGenerate
 
 let always v _ = v
 
@@ -16,9 +16,9 @@ let json args =
 let c args =
     let input = Array.tryHead args |> Option.defaultValue "test.c"
     let src = IO.File.ReadAllText input
-    match parseCProgram src with
-    | Ok output -> Console.WriteLine output |> always 0
-    | Error e -> "C Parse failed: " + e |> Console.WriteLine |> always 1
+    match compileCProgram src with
+    | Ok output -> IO.File.WriteAllText ("test.s", output) |> always 0
+    | Error e -> "C compilation failed: " + e |> Console.WriteLine |> always 1
 
 
 [<EntryPoint>]

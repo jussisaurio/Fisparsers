@@ -63,6 +63,12 @@ let private parseFuncDecl =
         return Func(fnName, stmt)
     }
 
+let private parseProgram =
+    parse {
+        let! main = parseFuncDecl
+        return (Program main)
+    }
+
 let run (Parser func) = func >> (fun result ->
     match result with
         | Error e -> Error e
@@ -70,4 +76,4 @@ let run (Parser func) = func >> (fun result ->
     )
 
 let parseCProgram input =
-    Result.bind (run parseFuncDecl) (tokenize input)
+    Result.bind (run parseProgram) (tokenize input)
