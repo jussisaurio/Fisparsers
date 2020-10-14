@@ -1,6 +1,6 @@
 ﻿open System
 open JSONParser
-open CTokenizer
+open CParser
 
 let always v _ = v
 
@@ -16,9 +16,9 @@ let json args =
 let c args =
     let input = Array.tryHead args |> Option.defaultValue "test.c"
     let src = IO.File.ReadAllText input
-    match tokenize src with
-    | Ok output -> List.map (fst >> fun (t: CToken) -> Console.WriteLine t) output |> always 0
-    | Error e -> "Tokenize failed: " + e |> Console.WriteLine |> always 1
+    match parseCProgram src with
+    | Ok output -> Console.WriteLine output |> always 0
+    | Error e -> "C Parse failed: " + e |> Console.WriteLine |> always 1
 
 
 [<EntryPoint>]

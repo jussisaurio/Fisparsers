@@ -9,6 +9,7 @@
     <Compile Include="Parser.fs" />
     <Compile Include="Tokenizer.fs" />
     <Compile Include="CTokenizer.fs" />
+    <Compile Include="CParser.fs" />
     <Compile Include="JSONTokenizer.fs" />
     <Compile Include="JSONParser.fs" />
     <Compile Include="Program.fs" />
