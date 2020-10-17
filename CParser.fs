@@ -4,7 +4,7 @@ open Parser
 open Tokenizer
 open CTokenizer
 
-type Expr = Const of int
+type Expr = Const of int | Unary of UnaryOperator * Expr
 type Statement = Return of Expr
 type Func = Func of string * Statement
 type Program = Program of Func
@@ -22,11 +22,14 @@ let private parseOpenParen = parseStructureToken OpenParen
 let private parseCloseParen = parseStructureToken CloseParen
 let private parseSemicolon = parseStructureToken Semicolon
 
-let private parseExpr = Parser (fun tokens ->
-    match List.tryHead tokens with
-    | Some (Integer n, _) -> Ok(Const n, List.tail tokens)
-    | Some (other, meta) -> getPosition meta + " - Expected expression, found " + string other |> Error
-    | None -> Error "Expected expression, got end of input"
+let rec private parseExpr = Parser (fun tokens ->
+    let rec parse ts =
+        match List.tryHead ts with
+        | Some (Integer n, _) -> Ok(Const n, List.tail ts)
+        | Some (UnaryOp u, _) -> List.tail ts |> parse >>= (fun (subExpr, tail) -> Ok(Unary (u,subExpr), tail))
+        | Some (other, meta) -> getPosition meta + " - Expected expression, found " + string other |> Error
+        | None -> Error "Expected expression, got end of input"
+    parse tokens
     )
 
 let private parseIdentifier = Parser (fun tokens ->

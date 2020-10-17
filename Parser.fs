@@ -3,7 +3,7 @@ module Parser
 type ParseError = string
 type Parser<'T,'K> = Parser of ('K list -> Result<'T * 'K list, ParseError>)
 
-let private (>>=) result chainResult = Result.bind chainResult result
+let (>>=) result chainResult = Result.bind chainResult result
 
 let private bind next (Parser parseFunc1) = Parser (fun inputList ->
     parseFunc1 inputList >>= (fun (value, rest) -> let (Parser parseFunc2) = next value in parseFunc2 rest)

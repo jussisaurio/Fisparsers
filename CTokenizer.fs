@@ -4,7 +4,18 @@ module CTokenizer
 open Tokenizer
 
 let CKeywords = Set.ofList ["int"; "return"]
-type CToken = OpenCurly | CloseCurly | OpenParen | CloseParen | Semicolon | Keyword of string | Identifier of string | Integer of int
+
+type UnaryOperator = Negation | BitwiseComplement | LogicalNegation
+type CToken =
+    OpenCurly
+    | CloseCurly
+    | OpenParen
+    | CloseParen
+    | Semicolon
+    | UnaryOp of UnaryOperator
+    | Keyword of string
+    | Identifier of string
+    | Integer of int
 
 let (|MatchIdentifier|_|) s =
     matchRegex "^[a-zA-Z]\w+" s
@@ -28,6 +39,9 @@ let tokenize str =
             | Prefix "(" rest -> _tokenize (prepend OpenParen) rest l (c+1)
             | Prefix ")" rest -> _tokenize (prepend CloseParen) rest l (c+1)
             | Prefix ";" rest -> _tokenize (prepend Semicolon) rest l (c+1)
+            | Prefix "-" rest -> _tokenize (prepend (UnaryOp Negation)) rest l (c+1)
+            | Prefix "~" rest -> _tokenize (prepend (UnaryOp BitwiseComplement)) rest l (c+1)
+            | Prefix "!" rest -> _tokenize (prepend (UnaryOp LogicalNegation)) rest l (c+1)
             | MatchKeyword kw -> let offset = String.length kw in _tokenize (Keyword kw |> prepend) (str.Substring offset) l (c+offset)
             | MatchInteger n -> let offset = n |> double |> log10 |> int |> (+) 1 in _tokenize (Integer n |> prepend) (str.Substring offset) l (c+offset)
             | MatchIdentifier ident -> let offset = String.length ident in _tokenize (Identifier ident |> prepend) (str.Substring offset) l (c+offset)

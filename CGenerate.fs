@@ -16,11 +16,17 @@ and generateFunction (Func (name, stmt)) =
 
 and generateFuncDeclaration name = let uname = "_" + name in ".globl " + uname + "\n" + uname + ":\n"
 
-and generateReturnStatement expr = "movq " + generateExpression expr + ", %rax" + "\nret"
+and generateReturnStatement expr = generateExpression expr + "\nret"
 
 and generateExpression e =
     match e with
-    | (Const n) -> "$" + string n
+    | (Const n) -> "movq $" + string n + ", %rax"
+    | (Unary (op,expr)) ->
+        match op with
+        | Negation -> generateExpression expr + "\n" + "neg %rax"
+        | BitwiseComplement -> generateExpression expr + "\n" + "not %rax"
+        // Is RAX 0? If yes, set ZF (zero flag) on. Set RAX = 0. Set AL (lowest 8 bits of RAX) to 1 if ZF is on.
+        | LogicalNegation -> generateExpression expr + "\n" + "cmpq $0, %rax" + "\n" + "movq $0, %rax" + "\n" + "sete %al"
 
 
 let compileCProgram = parseCProgram <!> generateCProgram
