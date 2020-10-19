@@ -2,4 +2,5 @@
 002_test_negation.c 254
 003_test_bitwise_complement.c 253
 004_test_logical_negation.c 1
-005_test_order_of_operations_and_basic_arithmetic.c 10
+005_test_order_of_operations_and_basic_arithmetic.c 7
+006_test_equal_precedence_left_associative.c 2
