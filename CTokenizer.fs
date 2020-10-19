@@ -17,6 +17,14 @@ type CToken =
     | Minus
     | Multi
     | Div
+    | And
+    | Or
+    | Eq
+    | Neq
+    | Gt
+    | Lt
+    | Gte
+    | Lte
     | Keyword of string
     | Identifier of string
     | Integer of int
@@ -38,6 +46,14 @@ let tokenize str =
             | "" -> Ok acc
             | Newline rest -> _tokenize acc rest (l+1) 0
             | EatWhitespace rest -> _tokenize acc rest l (c+1)
+            | Prefix "&&" rest -> _tokenize (prepend And) rest l (c+2)
+            | Prefix "||" rest -> _tokenize (prepend Or) rest l (c+2)
+            | Prefix "==" rest -> _tokenize (prepend Eq) rest l (c+2)
+            | Prefix "!=" rest -> _tokenize (prepend Neq) rest l (c+2)
+            | Prefix ">=" rest -> _tokenize (prepend Gte) rest l (c+2)
+            | Prefix "<=" rest -> _tokenize (prepend Lte) rest l (c+2)
+            | Prefix ">" rest -> _tokenize (prepend Gt) rest l (c+1)
+            | Prefix "<" rest -> _tokenize (prepend Lt) rest l (c+1)
             | Prefix "{" rest -> _tokenize (prepend OpenCurly) rest l (c+1)
             | Prefix "}" rest -> _tokenize (prepend CloseCurly) rest l (c+1)
             | Prefix "(" rest -> _tokenize (prepend OpenParen) rest l (c+1)
@@ -50,10 +66,10 @@ let tokenize str =
             | Prefix "*" rest -> _tokenize (prepend Multi) rest l (c+1)
             | Prefix "/" rest -> _tokenize (prepend Div) rest l (c+1)
             | MatchKeyword kw -> let offset = String.length kw in _tokenize (Keyword kw |> prepend) (str.Substring offset) l (c+offset)
-            | MatchInteger n -> let offset = n |> double |> log10 |> int |> (+) 1 in _tokenize (Integer n |> prepend) (str.Substring offset) l (c+offset)
+            | MatchInteger n -> let offset = if n < 10 then 1 else n |> double |> log10 |> int |> (+) 1 in _tokenize (Integer n |> prepend) (str.Substring offset) l (c+offset)
             | MatchIdentifier ident -> let offset = String.length ident in _tokenize (Identifier ident |> prepend) (str.Substring offset) l (c+offset)
             | invalid -> TokenizeError invalid |> Error
 
-    match _tokenize List.empty str 0 0 with
+    match _tokenize List.empty str 1 1 with
         | Ok tokens -> tokens |> List.rev |> Ok
         | Error (TokenizeError e) -> Error e

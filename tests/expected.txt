@@ -1,6 +1,28 @@
-001_test_return_constant.c 2
-002_test_negation.c 254
-003_test_bitwise_complement.c 253
-004_test_logical_negation.c 1
-005_test_order_of_operations_and_basic_arithmetic.c 7
-006_test_equal_precedence_left_associative.c 2
+2
+254
+253
+1
+7
+2
+1
+0
+1
+0
+0
+1
+0
+1
+1
+0
+0
+1
+1
+0
+1
+1
+1
+0
+0
+0
+0
+1

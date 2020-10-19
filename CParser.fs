@@ -4,15 +4,22 @@ open Parser
 open Tokenizer
 open CTokenizer
 
-type PlusMinus = PlusOp | MinusOp
-type DivMulti = DivOp | MultiOp
+type Precedence1 = OrOp
+type Precedence2 = AndOp
+type Precedence3 = EqOp | NeqOp
+type Precedence4 = GtOp | GteOp | LtOp | LteOp
+type Precedence5 = AddOp | SubOp
+type Precedence6 = DivOp | MulOp
+type Precedence7 = NegationOp | BitwiseComplOp | LogicalNegationOp
 
-type UnOp = NegationOp | BitwiseComplOp | LogicalNegationOp
-
-// These handle operator precedence correctly. Associativity of +/-, and precedence: Unary > Div/Multi > Plus/Minus
-type Expr = Expr of Term * (PlusMinus * Term) list
-and Term = Term of Factor * (DivMulti * Factor) list
-and Factor = Parenthesized of Expr | UnaryOp of UnOp * Factor | Const of int
+// These handle operator precedence correctly. OR < AND < EQ/NEQ < GT/GTE/LT/LTE < ADD/SUB < MUL/DIV < PARENTHESIZED/UNARY/CONSTANT
+type Expr = Expr of Expr2 * (Precedence1 * Expr2) list
+and Expr2 = Expr2 of Expr3 * (Precedence2 * Expr3) list
+and Expr3 = Expr3 of Expr4 * (Precedence3 * Expr4) list
+and Expr4 = Expr4 of Expr5 * (Precedence4 * Expr5) list
+and Expr5 = Expr5 of Expr6 * (Precedence5 * Expr6) list
+and Expr6 = Expr6 of Expr7 * (Precedence6 * Expr7) list
+and Expr7 = Parenthesized of Expr | UnaryOp of Precedence7 * Expr7 | Const of int
 
 type Statement = Return of Expr
 type Func = Func of string * Statement
@@ -31,37 +38,75 @@ let private parseOpenParen = parseStructureToken OpenParen
 let private parseCloseParen = parseStructureToken CloseParen
 let private parseSemicolon = parseStructureToken Semicolon
 
-// Parsing an expression means:
-// 1. Parsing a term 2. Maybe parsing (+,-) and another term, 3. repeat 2 until fail
 let rec parseExpr =
     parse {
-        let! t = parseTerm
-        let opAndTerm = parse {
-            let! opr = parsePlusMinus
-            let! t2 = parseTerm
+        let! t = parseExpr2
+        let opAndExpr6 = parse {
+            let! opr = parseExprBinOperator
+            let! t2 = parseExpr2
             return (opr, t2)
         }
-        let! rest = zeroOrMore opAndTerm
+        let! rest = zeroOrMore opAndExpr6
         return Expr (t, rest)
     }
-
-// Parsing a term means:
-// 1. Parsing a factor 2. Maybe parsing (*,/) and another factor, 3. repeat 2 until
-and private parseTerm =
+and parseExpr2 =
     parse {
-        let! f = parseFactor
-        let opAndFactor = parse {
-            let! opr = parseMulDiv
-            let! f2 = parseFactor
-            return (opr, f2)
+        let! t = parseExpr3
+        let opAndExpr6 = parse {
+            let! opr = parseExprBinOperator2
+            let! t2 = parseExpr3
+            return (opr, t2)
         }
-        let! rest = zeroOrMore opAndFactor
-        return Term (f, rest)
+        let! rest = zeroOrMore opAndExpr6
+        return Expr2 (t, rest)
+    }
+and parseExpr3 =
+    parse {
+        let! t = parseExpr4
+        let opAndExpr6 = parse {
+            let! opr = parseExprBinOperator3
+            let! t2 = parseExpr4
+            return (opr, t2)
+        }
+        let! rest = zeroOrMore opAndExpr6
+        return Expr3 (t, rest)
+    }
+and parseExpr4 =
+    parse {
+        let! t = parseExpr5
+        let opAndExpr6 = parse {
+            let! opr = parseExprBinOperator4
+            let! t2 = parseExpr5
+            return (opr, t2)
+        }
+        let! rest = zeroOrMore opAndExpr6
+        return Expr4 (t, rest)
+    }
+and parseExpr5 =
+    parse {
+        let! t = parseExpr6
+        let opAndExpr6 = parse {
+            let! opr = parseExprBinOperator5
+            let! t2 = parseExpr6
+            return (opr, t2)
+        }
+        let! rest = zeroOrMore opAndExpr6
+        return Expr5 (t, rest)
     }
 
-// Parsing a factor means:
-// 1. Parsing a parenthesized expression, OR 2. parsing a constant, OR 3. parsing a unary operation
-and private parseFactor =
+and parseExpr6 =
+    parse {
+        let! f = parseExpr7
+        let opAndExpr7 = parse {
+            let! opr = parseExprBinOperator6
+            let! f2 = parseExpr7
+            return (opr, f2)
+        }
+        let! rest = zeroOrMore opAndExpr7
+        return Expr6 (f, rest)
+    }
+
+and parseExpr7 =
     parse {
         return! parseParenthesizedExpr
         return! parseConst
@@ -92,18 +137,50 @@ and private parseConst = Parser (fun tokens ->
     | None -> Error "Expected constant, got end of input"
     )
 
-and private parsePlusMinus = Parser (fun tokens ->
+and private parseExprBinOperator = Parser (fun tokens ->
     match List.tryHead tokens with
     | None -> Error "uhh"
-    | Some (Plus, _) -> Ok(PlusOp, List.tail tokens)
-    | Some (Minus, _) -> Ok(MinusOp, List.tail tokens)
+    | Some (Or, _) -> Ok(OrOp, List.tail tokens)
     | _ -> Error "uhh"
     )
 
-and private parseMulDiv = Parser (fun tokens ->
+and private parseExprBinOperator2 = Parser (fun tokens ->
     match List.tryHead tokens with
     | None -> Error "uhh"
-    | Some (Multi, _) -> Ok(MultiOp, List.tail tokens)
+    | Some (And, _) -> Ok(AndOp, List.tail tokens)
+    | _ -> Error "uhh"
+    )
+
+and private parseExprBinOperator3 = Parser (fun tokens ->
+    match List.tryHead tokens with
+    | None -> Error "uhh"
+    | Some (Eq, _) -> Ok(EqOp, List.tail tokens)
+    | Some (Neq, _) -> Ok(NeqOp, List.tail tokens)
+    | _ -> Error "uhh"
+    )
+
+and private parseExprBinOperator4 = Parser (fun tokens ->
+    match List.tryHead tokens with
+    | None -> Error "uhh"
+    | Some (Gt, _) -> Ok(GtOp, List.tail tokens)
+    | Some (Gte, _) -> Ok(GteOp, List.tail tokens)
+    | Some (Lt, _) -> Ok(LtOp, List.tail tokens)
+    | Some (Lte, _) -> Ok(LteOp, List.tail tokens)
+    | _ -> Error "uhh"
+    )
+
+and private parseExprBinOperator5 = Parser (fun tokens ->
+    match List.tryHead tokens with
+    | None -> Error "uhh"
+    | Some (Plus, _) -> Ok(AddOp, List.tail tokens)
+    | Some (Minus, _) -> Ok(SubOp, List.tail tokens)
+    | _ -> Error "uhh"
+    )
+
+and private parseExprBinOperator6 = Parser (fun tokens ->
+    match List.tryHead tokens with
+    | None -> Error "uhh"
+    | Some (Multi, _) -> Ok(MulOp, List.tail tokens)
     | Some (Div, _) -> Ok(DivOp, List.tail tokens)
     | _ -> Error "uhh"
     )
@@ -111,7 +188,7 @@ and private parseMulDiv = Parser (fun tokens ->
 and private parseUnaryOp =
     parse {
         let! o = parseUnaryOperator
-        let! f = parseFactor
+        let! f = parseExpr7
         return (UnaryOp (o, f))
     }
 

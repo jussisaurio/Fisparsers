@@ -42,7 +42,7 @@ let private parseKey = Parser (fun tokens ->
 let rec private parseJSON () =
     let parser = parse {
         return! parseLiteral
-        return! parseArray () // hack around F#'s strict evaluation by defining these parsers as factory functions
+        return! parseArray () // hack around F#'s strict evaluation by defining these parsers as expr7y functions
         return! parseObject ()
     }
     parser

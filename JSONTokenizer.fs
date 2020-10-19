@@ -68,6 +68,6 @@ let tokenize str =
                       | Some (token, rest) -> let offset = String.length str - String.length rest in _tokenize(prepend token) rest l (c + offset)
                       | _ -> TokenizeError "wat" |> Error
 
-    match _tokenize List.empty str 0 0 with
+    match _tokenize List.empty str 1 1 with
         | Ok tokens -> tokens |> List.rev |> Ok
         | e -> e

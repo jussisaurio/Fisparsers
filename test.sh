@@ -17,8 +17,8 @@ for file in ./tests/*.c; do
     gcc $asmfile -o $exe
     $exe
     actual=$?
-    echo "$file: expected ${expectedArr[i+1]}, got $actual"
+    echo "$file: expected ${expectedArr[i]}, got $actual"
     rm $asmfile
     rm $exe
-    ((i=i+2))
+    ((i=i+1))
 done
