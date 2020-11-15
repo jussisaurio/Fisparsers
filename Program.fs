@@ -17,7 +17,8 @@ let c args =
     let src = IO.File.ReadAllText input
     match compileCProgram src with
     | Ok output -> IO.File.WriteAllText (outFile, output) |> always 0
-    | Error e -> "C compilation failed: " + e |> Console.WriteLine |> always 1
+    | Error (ParseError e) -> "C parsing failed: " + e |> Console.WriteLine |> always 1
+    | Error (CodeGenerationError e) -> "C code generation failed: " + e |> Console.WriteLine |> always 1
 
 
 [<EntryPoint>]

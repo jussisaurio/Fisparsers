@@ -25,12 +25,13 @@ type CToken =
     | Lt
     | Gte
     | Lte
+    | Assignment
     | Keyword of string
     | Identifier of string
     | Integer of int
 
 let (|MatchIdentifier|_|) s =
-    matchRegex "^[a-zA-Z]\w+" s
+    matchRegex "^[a-zA-Z]\w*" s
 
 let (|MatchInteger|_|) s =
     Option.map int (matchRegex "^[0-9]+" s)
@@ -52,6 +53,7 @@ let tokenize str =
             | Prefix "!=" rest -> _tokenize (prepend Neq) rest l (c+2)
             | Prefix ">=" rest -> _tokenize (prepend Gte) rest l (c+2)
             | Prefix "<=" rest -> _tokenize (prepend Lte) rest l (c+2)
+            | Prefix "=" rest -> _tokenize (prepend Assignment) rest l (c+1)
             | Prefix ">" rest -> _tokenize (prepend Gt) rest l (c+1)
             | Prefix "<" rest -> _tokenize (prepend Lt) rest l (c+1)
             | Prefix "{" rest -> _tokenize (prepend OpenCurly) rest l (c+1)
@@ -68,7 +70,7 @@ let tokenize str =
             | MatchKeyword kw -> let offset = String.length kw in _tokenize (Keyword kw |> prepend) (str.Substring offset) l (c+offset)
             | MatchInteger n -> let offset = if n < 10 then 1 else n |> double |> log10 |> int |> (+) 1 in _tokenize (Integer n |> prepend) (str.Substring offset) l (c+offset)
             | MatchIdentifier ident -> let offset = String.length ident in _tokenize (Identifier ident |> prepend) (str.Substring offset) l (c+offset)
-            | invalid -> TokenizeError invalid |> Error
+            | invalid -> "Failed to parse: " + invalid |> TokenizeError |> Error
 
     match _tokenize List.empty str 1 1 with
         | Ok tokens -> tokens |> List.rev |> Ok
