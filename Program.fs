@@ -12,7 +12,7 @@ let json args =
     | Error e -> "Parse failed: " + e |> Console.WriteLine |> always 1
 
 let c args =
-    let input = Array.tryHead args |> Option.defaultValue "test.c"
+    let input = Array.tryHead args |> Option.defaultValue "./tests/001_test_return_constant.c"
     let outFile = Array.tryItem 1 args |> Option.defaultValue "test.s"
     let src = IO.File.ReadAllText input
     match compileCProgram src with
