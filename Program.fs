@@ -26,14 +26,12 @@ let compileC (file: string) =
 let c args =
     if Array.isEmpty args then "Provide at least one input file" |> Console.WriteLine |> always 1
     else
-        let print result =
-            let str =
-                match result with
-                | Ok f -> f + " written successfully!"
-                | Error (f, e) -> "Error compiling " + f + ": " + e
-            Console.WriteLine str
+        let printErrors result =
+            match result with
+            | Ok f -> ignore f
+            | Error (f, e) -> "Error compiling " + f + ": " + e |> Console.WriteLine
         let results = Array.map compileC args
-        Array.map print results |> ignore
+        Array.map printErrors results |> ignore
         if Array.exists (fun r ->
             match r with
             | Error _ -> true

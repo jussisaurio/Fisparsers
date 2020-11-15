@@ -22,13 +22,30 @@ then
 fi
 
 i=0
+
+passed=0
+failed=0
 for asmfile in ./tests/*.s; do
     exe="$asmfile.out"
     gcc $asmfile -o $exe
     $exe
     actual=$?
-    echo "$file: expected ${expectedArr[i]}, got $actual"
+    if [ $actual -ne ${expectedArr[i]} ]
+    then
+        echo "$file: expected ${expectedArr[i]}, got $actual"
+        ((failed=failed+1))
+    else
+        ((passed=passed+1))
+    fi
     rm $asmfile
     rm $exe
     ((i=i+1))
 done
+
+echo "$passed tests passed, $failed failed"
+if [ $failed -gt 0 ]
+then
+    exit 1
+else
+    exit 0
+fi
