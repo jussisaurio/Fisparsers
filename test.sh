@@ -9,11 +9,21 @@ for line in $(cat ./tests/expected.txt); do
     expectedArr+=($line)
 done
 
-i=0
+files=()
 for file in ./tests/*.c; do
-    asmfile="$file-asm.s"
-    exe="$file.out"
-    dotnet run c $file $asmfile
+    files+=($file)
+done
+
+dotnet run c "${files[@]}"
+if [ $? -eq 1 ]
+then
+    rm ./tests/*.s
+    exit 1
+fi
+
+i=0
+for asmfile in ./tests/*.s; do
+    exe="$asmfile.out"
     gcc $asmfile -o $exe
     $exe
     actual=$?

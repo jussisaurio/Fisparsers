@@ -16,6 +16,8 @@ let createLabel length prefix =
     "_" + prefix + "_" + String(Array.init length (fun _ -> chars.[r.Next sz]))
 
 let rec generateCProgram (Program main) =
+    variables <- Map.empty
+    stackIndex <- -8
     // TODO no exceptions
     try
         generateFunction main |> Ok
