@@ -7,7 +7,7 @@ open CParser
 type CompileError = CodeGenerationError of string | ParseError of ParseError
 // TODO dont use mutable data structures
 let mutable variables: Map<string, int> = Map.empty
-let mutable stackIndex = -8 // 64-bit word above EBP (frame pointer)
+let mutable stackIndex = -8 // 64-bit word above RBP (frame pointer)
 
 let createLabel length prefix =
     let r = Random()
@@ -26,7 +26,7 @@ let rec generateCProgram (Program main) =
 
 
 and generateFunction (Func (name, statements)) =
-    (generateFuncDeclaration name) + generateFunctionPrologue + ((List.map generateStatement statements) |> String.concat "\n")
+    (generateFuncDeclaration name) + generateFunctionPrologue + generateStatements statements
 
 and generateFunctionPrologue =
     "push %rbp\n" + // store frame pointer on stack
@@ -35,13 +35,16 @@ and generateFunctionPrologue =
 and generateFunctionEpilogue =
     "movq %rbp, %rsp\n" + // restore stack pointer to where it was before this func call
     "pop %rbp\n" + // restore frame pointer to what it was before this func call
-    "ret" // return from function
+    "ret\n" // return from function
 
-and generateStatement stmt =
-    match stmt with
-    | (Return expr) -> generateReturnStatement expr
-    | (StandaloneExp expr) -> generateExpr expr
-    | (VariableDeclaration (name, expr)) -> generateVariableDeclaration name expr
+and generateStatements stmts =
+    let rec g ss hasReturn =
+        match ss with
+        | [] -> if hasReturn then "" else "movq $0, %rax\n" + generateFunctionEpilogue
+        | (Return expr)::xs -> generateReturnStatement expr + g xs true
+        | (StandaloneExp expr)::xs -> generateExpr expr + g xs hasReturn
+        | (VariableDeclaration (name, expr))::xs -> generateVariableDeclaration name expr + g xs hasReturn
+    g stmts false
 
 and generateVariableDeclaration name expr =
     // TODO resultify this whole thing instead of exceptions

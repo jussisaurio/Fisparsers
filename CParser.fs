@@ -262,6 +262,7 @@ let private parseStatement =
         return! parseVariableDeclaration
         return! (parse {
             let! e = parseExpr
+            do! parseSemicolon
             return (StandaloneExp e)
         })
         return! parseReturnStatement
@@ -274,7 +275,7 @@ let private parseFuncDecl =
         do! parseOpenParen
         do! parseCloseParen
         do! parseOpenCurly
-        let! statements = oneOrMore parseStatement
+        let! statements = zeroOrMore parseStatement
         do! parseCloseCurly
         return Func(fnName, statements)
     }
