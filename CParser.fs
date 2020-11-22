@@ -5,24 +5,26 @@ open Tokenizer
 open CTokenizer
 
 type Precedence0 = AssignmentOp
-type Precedence1 = OrOp
-type Precedence2 = AndOp
-type Precedence3 = EqOp | NeqOp
-type Precedence4 = GtOp | GteOp | LtOp | LteOp
-type Precedence5 = AddOp | SubOp
-type Precedence6 = DivOp | MulOp
-type Precedence7 = NegationOp | BitwiseComplOp | LogicalNegationOp
+type Precedence1 = TernaryOp
+type Precedence2 = OrOp
+type Precedence3 = AndOp
+type Precedence4 = EqOp | NeqOp
+type Precedence5 = GtOp | GteOp | LtOp | LteOp
+type Precedence6 = AddOp | SubOp
+type Precedence7 = DivOp | MulOp
+type Precedence8 = NegationOp | BitwiseComplOp | LogicalNegationOp
 
 type Ident = string
 // These handle operator precedence correctly. Assignment < OR < AND < EQ/NEQ < GT/GTE/LT/LTE < ADD/SUB < MUL/DIV < PARENTHESIZED/UNARY/CONSTANT
 type Expr = Assign of Ident * Precedence0 * Expr | Expr of Expr1
-and Expr1 = Expr1 of Expr2 * (Precedence1 * Expr2) list
+and Expr1 = TernaryExpr of Expr2 * Expr * Expr1 | Expr1 of Expr2
 and Expr2 = Expr2 of Expr3 * (Precedence2 * Expr3) list
 and Expr3 = Expr3 of Expr4 * (Precedence3 * Expr4) list
 and Expr4 = Expr4 of Expr5 * (Precedence4 * Expr5) list
 and Expr5 = Expr5 of Expr6 * (Precedence5 * Expr6) list
 and Expr6 = Expr6 of Expr7 * (Precedence6 * Expr7) list
-and Expr7 = Parenthesized of Expr | UnaryOp of Precedence7 * Expr7 | Const of int | Ident of string
+and Expr7 = Expr7 of Expr8 * (Precedence7 * Expr8) list
+and Expr8 = Parenthesized of Expr | UnaryOp of Precedence8 * Expr8 | Const of int | Ident of string
 
 type Declaration = VariableDeclaration of string * Expr option
 type Statement = Return of Expr | StandaloneExp of Expr | IfStatement of Expr * Statement * Statement option
@@ -43,6 +45,8 @@ let private parseOpenParen = parseStructureToken OpenParen
 let private parseCloseParen = parseStructureToken CloseParen
 let private parseSemicolon = parseStructureToken Semicolon
 let private parseAssignment = parseStructureToken Assignment
+let private parseQuestionMark = parseStructureToken QuestionMark
+let private parseColon = parseStructureToken Colon
 
 // TODO these are getting unwieldy
 let rec parseExpr =
@@ -59,23 +63,26 @@ let rec parseExpr =
         })
     }
 
-
 and parseExpr1 =
     parse {
-        let! t = parseExpr2
-        let opAndExpr2 = parse {
-            let! opr = parseExprBinOperator
-            let! t2 = parseExpr2
-            return (opr, t2)
-        }
-        let! rest = zeroOrMore opAndExpr2
-        return Expr1 (t, rest)
+        return! (parse {
+           let! test = parseExpr2
+           do! parseQuestionMark
+           let! whenTrue = parseExpr
+           do! parseColon
+           let! whenFalse = parseExpr1
+           return TernaryExpr (test, whenTrue, whenFalse)
+        })
+        return! (parse {
+            let! e = parseExpr2
+            return (Expr1 e)
+        })
     }
 and parseExpr2 =
     parse {
         let! t = parseExpr3
         let opAndExpr3 = parse {
-            let! opr = parseExprBinOperator2
+            let! opr = parseExprBinOperator
             let! t2 = parseExpr3
             return (opr, t2)
         }
@@ -86,7 +93,7 @@ and parseExpr3 =
     parse {
         let! t = parseExpr4
         let opAndExpr4 = parse {
-            let! opr = parseExprBinOperator3
+            let! opr = parseExprBinOperator2
             let! t2 = parseExpr4
             return (opr, t2)
         }
@@ -97,7 +104,7 @@ and parseExpr4 =
     parse {
         let! t = parseExpr5
         let opAndExpr5 = parse {
-            let! opr = parseExprBinOperator4
+            let! opr = parseExprBinOperator3
             let! t2 = parseExpr5
             return (opr, t2)
         }
@@ -108,27 +115,38 @@ and parseExpr5 =
     parse {
         let! t = parseExpr6
         let opAndExpr6 = parse {
-            let! opr = parseExprBinOperator5
+            let! opr = parseExprBinOperator4
             let! t2 = parseExpr6
             return (opr, t2)
         }
         let! rest = zeroOrMore opAndExpr6
         return Expr5 (t, rest)
     }
-
 and parseExpr6 =
     parse {
-        let! f = parseExpr7
+        let! t = parseExpr7
         let opAndExpr7 = parse {
-            let! opr = parseExprBinOperator6
-            let! f2 = parseExpr7
-            return (opr, f2)
+            let! opr = parseExprBinOperator5
+            let! t2 = parseExpr7
+            return (opr, t2)
         }
         let! rest = zeroOrMore opAndExpr7
-        return Expr6 (f, rest)
+        return Expr6 (t, rest)
     }
 
 and parseExpr7 =
+    parse {
+        let! f = parseExpr8
+        let opAndExpr8 = parse {
+            let! opr = parseExprBinOperator6
+            let! f2 = parseExpr8
+            return (opr, f2)
+        }
+        let! rest = zeroOrMore opAndExpr8
+        return Expr7 (f, rest)
+    }
+
+and parseExpr8 =
     parse {
         return! parseParenthesizedExpr
         return! parseConst
@@ -221,7 +239,7 @@ and private parseExprBinOperator6 = Parser (fun tokens ->
 and private parseUnaryOp =
     parse {
         let! o = parseUnaryOperator
-        let! f = parseExpr7
+        let! f = parseExpr8
         return (UnaryOp (o, f))
     }
 
