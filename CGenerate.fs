@@ -56,7 +56,25 @@ and generateStatement s =
     match s with
     | Return expr -> generateReturnStatement expr
     | StandaloneExp expr -> generateExpr expr
-    | IfStatement (test, whenTrue, maybeElse) -> "TODO"
+    | IfStatement (a,b,c) -> generateIfStatement a b c
+
+and generateIfStatement test whenTrue maybeElse =
+    let generatedCondition = generateExpr test
+    let generatedWhenTrue = generateStatement whenTrue
+    let generatedElse = Option.map generateStatement maybeElse |> Option.defaultValue ""
+
+    let elseLabel = createLabel 10 "IF_evalElse"
+    let endLabel = createLabel 10 "IF_end"
+
+    generatedCondition +
+    "cmpq $0, %rax\n"
+    + "je " + elseLabel + "\n"
+    + generatedWhenTrue
+    + "jmp " + endLabel + "\n"
+    + elseLabel + ":\n"
+    + generatedElse
+    + endLabel + ":\n"
+
 
 and generateVariableDeclaration (VariableDeclaration (name, expr)) =
     // TODO resultify this whole thing instead of exceptions
