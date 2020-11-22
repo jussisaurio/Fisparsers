@@ -82,7 +82,7 @@ and parseExpr2 =
     parse {
         let! t = parseExpr3
         let opAndExpr3 = parse {
-            let! opr = parseExprBinOperator
+            let! opr = parseExprBinOperator2
             let! t2 = parseExpr3
             return (opr, t2)
         }
@@ -93,7 +93,7 @@ and parseExpr3 =
     parse {
         let! t = parseExpr4
         let opAndExpr4 = parse {
-            let! opr = parseExprBinOperator2
+            let! opr = parseExprBinOperator3
             let! t2 = parseExpr4
             return (opr, t2)
         }
@@ -104,7 +104,7 @@ and parseExpr4 =
     parse {
         let! t = parseExpr5
         let opAndExpr5 = parse {
-            let! opr = parseExprBinOperator3
+            let! opr = parseExprBinOperator4
             let! t2 = parseExpr5
             return (opr, t2)
         }
@@ -115,7 +115,7 @@ and parseExpr5 =
     parse {
         let! t = parseExpr6
         let opAndExpr6 = parse {
-            let! opr = parseExprBinOperator4
+            let! opr = parseExprBinOperator5
             let! t2 = parseExpr6
             return (opr, t2)
         }
@@ -126,7 +126,7 @@ and parseExpr6 =
     parse {
         let! t = parseExpr7
         let opAndExpr7 = parse {
-            let! opr = parseExprBinOperator5
+            let! opr = parseExprBinOperator6
             let! t2 = parseExpr7
             return (opr, t2)
         }
@@ -138,7 +138,7 @@ and parseExpr7 =
     parse {
         let! f = parseExpr8
         let opAndExpr8 = parse {
-            let! opr = parseExprBinOperator6
+            let! opr = parseExprBinOperator7
             let! f2 = parseExpr8
             return (opr, f2)
         }
@@ -188,21 +188,21 @@ and private parseAssignmentOperator = Parser (fun tokens ->
     | _ -> Error "uhh"
     )
 
-and private parseExprBinOperator = Parser (fun tokens ->
+and private parseExprBinOperator2 = Parser (fun tokens ->
     match List.tryHead tokens with
     | None -> Error "uhh"
     | Some (Or, _) -> Ok(OrOp, List.tail tokens)
     | _ -> Error "uhh"
     )
 
-and private parseExprBinOperator2 = Parser (fun tokens ->
+and private parseExprBinOperator3 = Parser (fun tokens ->
     match List.tryHead tokens with
     | None -> Error "uhh"
     | Some (And, _) -> Ok(AndOp, List.tail tokens)
     | _ -> Error "uhh"
     )
 
-and private parseExprBinOperator3 = Parser (fun tokens ->
+and private parseExprBinOperator4 = Parser (fun tokens ->
     match List.tryHead tokens with
     | None -> Error "uhh"
     | Some (Eq, _) -> Ok(EqOp, List.tail tokens)
@@ -210,7 +210,7 @@ and private parseExprBinOperator3 = Parser (fun tokens ->
     | _ -> Error "uhh"
     )
 
-and private parseExprBinOperator4 = Parser (fun tokens ->
+and private parseExprBinOperator5 = Parser (fun tokens ->
     match List.tryHead tokens with
     | None -> Error "uhh"
     | Some (Gt, _) -> Ok(GtOp, List.tail tokens)
@@ -220,7 +220,7 @@ and private parseExprBinOperator4 = Parser (fun tokens ->
     | _ -> Error "uhh"
     )
 
-and private parseExprBinOperator5 = Parser (fun tokens ->
+and private parseExprBinOperator6 = Parser (fun tokens ->
     match List.tryHead tokens with
     | None -> Error "uhh"
     | Some (Plus, _) -> Ok(AddOp, List.tail tokens)
@@ -228,7 +228,7 @@ and private parseExprBinOperator5 = Parser (fun tokens ->
     | _ -> Error "uhh"
     )
 
-and private parseExprBinOperator6 = Parser (fun tokens ->
+and private parseExprBinOperator7 = Parser (fun tokens ->
     match List.tryHead tokens with
     | None -> Error "uhh"
     | Some (Multi, _) -> Ok(MulOp, List.tail tokens)
