@@ -39,45 +39,43 @@ let private parseKey = Parser (fun tokens ->
         | (invalid, meta)::_ -> (getPosition meta + " - Expected key, found " + string invalid ) |> Error
     )
 
-let rec private parseJSON () =
-    let parser = parse {
+let rec private parseJSON =
+    parse {
         return! parseLiteral
-        return! parseArray () // hack around F#'s strict evaluation by defining these parsers as factory functions
-        return! parseObject ()
+        return! parseArray
+        return! parseObject
     }
-    parser
 
-and private parseArray () =
-    let parser = parse {
+and private parseArray =
+    parse {
         do! parseArrayStart
         let parseJSONObjWithComma = parse {
-            let! value = parseJSON ()
+            let! value = parseJSON
             do! parseComma
             return value
         }
         let! jsons = zeroOrMore parseJSONObjWithComma
         if List.isEmpty jsons then
-            let! maybeOneEntry = maybeOne (parseJSON())
+            let! maybeOneEntry = maybeOne parseJSON
             do! parseArrayEnd
             return Array maybeOneEntry
         else
-            let! lastEntry = parseJSON()
+            let! lastEntry = parseJSON
             do! parseArrayEnd
             return List.append jsons [lastEntry] |> Array
     }
-    parser
 
-and private parseObject () =
-    let parser = parse {
+and private parseObject =
+    parse {
         do! parseObjectStart
         let parseKVPair = parse {
             let! key = parseKey
-            let! value = parseJSON ()
+            let! value = parseJSON
             return (key, value)
         }
         let parseKVPairWithComma = parse {
             let! key = parseKey
-            let! value = parseJSON ()
+            let! value = parseJSON
             do! parseComma
             return (key, value)
         }
@@ -91,7 +89,6 @@ and private parseObject () =
             do! parseObjectEnd
             return List.append kvPairs [lastEntry] |> Map.ofList |> Object
     }
-    parser
 
 let run (Parser func) = func >> (fun result ->
     match result with
@@ -101,7 +98,7 @@ let run (Parser func) = func >> (fun result ->
 
 let jsonParse input =
     match tokenize input with
-        | Ok tokens -> run (parseJSON()) tokens
+        | Ok tokens -> run parseJSON tokens
         | Error (TokenizeError e) -> Error e
 
 let rec jsonSerialize json =
