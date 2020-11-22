@@ -3,7 +3,7 @@ module CTokenizer
 
 open Tokenizer
 
-let CKeywords = Set.ofList ["int"; "return"]
+let CKeywords = Set.ofList ["int"; "return"; "if"; "else"]
 
 type CToken =
     OpenCurly
@@ -25,6 +25,8 @@ type CToken =
     | Lt
     | Gte
     | Lte
+    | Colon
+    | QuestionMark
     | Assignment
     | Keyword of string
     | Identifier of string
@@ -67,6 +69,8 @@ let tokenize str =
             | Prefix "-" rest -> _tokenize (prepend Minus) rest l (c+1)
             | Prefix "*" rest -> _tokenize (prepend Multi) rest l (c+1)
             | Prefix "/" rest -> _tokenize (prepend Div) rest l (c+1)
+            | Prefix ":" rest -> _tokenize (prepend Colon) rest l (c+1)
+            | Prefix "?" rest -> _tokenize (prepend QuestionMark) rest l (c+1)
             | MatchKeyword kw -> let offset = String.length kw in _tokenize (Keyword kw |> prepend) (str.Substring offset) l (c+offset)
             | MatchInteger n -> let offset = if n < 10 then 1 else n |> double |> log10 |> int |> (+) 1 in _tokenize (Integer n |> prepend) (str.Substring offset) l (c+offset)
             | MatchIdentifier ident -> let offset = String.length ident in _tokenize (Identifier ident |> prepend) (str.Substring offset) l (c+offset)
