@@ -25,8 +25,8 @@ let rec generateCProgram (Program main) =
     | :? Exception as e -> e.Message |> CodeGenerationError |> Error
 
 
-and generateFunction (Func (name, statements)) =
-    (generateFuncDeclaration name) + generateFunctionPrologue + generateStatements statements
+and generateFunction (Func (name, blockItems)) =
+    (generateFuncDeclaration name) + generateFunctionPrologue + generateBlockItems blockItems
 
 and generateFunctionPrologue =
     "push %rbp\n" + // store frame pointer on stack
@@ -37,16 +37,28 @@ and generateFunctionEpilogue =
     "pop %rbp\n" + // restore frame pointer to what it was before this func call
     "ret\n" // return from function
 
-and generateStatements stmts =
-    let rec g ss hasReturn =
-        match ss with
-        | [] -> if hasReturn then "" else "movq $0, %rax\n" + generateFunctionEpilogue
-        | (Return expr)::xs -> generateReturnStatement expr + g xs true
-        | (StandaloneExp expr)::xs -> generateExpr expr + g xs hasReturn
-        | (VariableDeclaration (name, expr))::xs -> generateVariableDeclaration name expr + g xs hasReturn
-    g stmts false
+and generateBlockItems blockItems =
+    let fork b =
+        match b with
+        | (S s) -> generateStatement s
+        | (D d) -> generateVariableDeclaration d
+    let rec g bs =
+        match bs with
+        | [] -> "movq $0, %rax\n" + generateFunctionEpilogue
+        | [lastItem] ->
+            match lastItem with
+            | (S (Return expr)) -> generateReturnStatement expr
+            | any -> fork any + g []
+        | x::xs -> fork x + g xs
+    g blockItems
 
-and generateVariableDeclaration name expr =
+and generateStatement s =
+    match s with
+    | Return expr -> generateReturnStatement expr
+    | StandaloneExp expr -> generateExpr expr
+    | IfStatement (test, whenTrue, maybeElse) -> "TODO"
+
+and generateVariableDeclaration (VariableDeclaration (name, expr)) =
     // TODO resultify this whole thing instead of exceptions
     if variables.ContainsKey name then failwith "Cant declare twice"
     else

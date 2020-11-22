@@ -24,8 +24,10 @@ and Expr5 = Expr5 of Expr6 * (Precedence5 * Expr6) list
 and Expr6 = Expr6 of Expr7 * (Precedence6 * Expr7) list
 and Expr7 = Parenthesized of Expr | UnaryOp of Precedence7 * Expr7 | Const of int | Ident of string
 
-type Statement = Return of Expr | VariableDeclaration of string * Expr option | StandaloneExp of Expr
-type Func = Func of string * Statement list
+type Declaration = VariableDeclaration of string * Expr option
+type Statement = Return of Expr | StandaloneExp of Expr | IfStatement of Expr * Statement * Statement option
+type BlockItem = D of Declaration | S of Statement
+type Func = Func of string * BlockItem list
 type Program = Program of Func
 
 let private parseStructureToken t = Parser (fun tokens ->
@@ -257,15 +259,42 @@ let private parseReturnStatement =
         return (Return ex)
     }
 
-let private parseStatement =
+let rec private parseIfStatement =
     parse {
-        return! parseVariableDeclaration
+        let! _ = parseKeyword "if"
+        do! parseOpenParen
+        let! test = parseExpr
+        do! parseCloseParen
+        let! whenTrue = parseStatement
+        let! maybeElse = maybeOne (parse {
+            let! _ = parseKeyword "else"
+            return! parseStatement
+        })
+
+        return IfStatement (test, whenTrue, List.tryHead maybeElse)
+    }
+
+and private parseStatement =
+    parse {
         return! (parse {
             let! e = parseExpr
             do! parseSemicolon
             return (StandaloneExp e)
         })
         return! parseReturnStatement
+        return! parseIfStatement
+    }
+
+let private parseBlockItem =
+    parse {
+        return! (parse {
+            let! d = parseVariableDeclaration
+            return (D d)
+        })
+        return! (parse {
+            let! s = parseStatement
+            return (S s)
+        })
     }
 
 let private parseFuncDecl =
@@ -275,9 +304,9 @@ let private parseFuncDecl =
         do! parseOpenParen
         do! parseCloseParen
         do! parseOpenCurly
-        let! statements = zeroOrMore parseStatement
+        let! bs = zeroOrMore parseBlockItem
         do! parseCloseCurly
-        return Func(fnName, statements)
+        return Func(fnName, bs)
     }
 
 let private parseProgram =

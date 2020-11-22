@@ -32,7 +32,7 @@ for asmfile in ./tests/*.s; do
     actual=$?
     if [ $actual -ne ${expectedArr[i]} ]
     then
-        echo "$file: expected ${expectedArr[i]}, got $actual"
+        echo "${files[i]}: expected ${expectedArr[i]}, got $actual"
         ((failed=failed+1))
     else
         ((passed=passed+1))
